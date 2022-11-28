@@ -1,0 +1,8 @@
+ERROR: 2022-11-24 23:18:31.578478: [Errno 5] Input/output error
+ERROR: 2022-11-24 23:22:50.431299: No module named 'asena'
+ERROR: 2022-11-25 15:07:32.780570: name 'BACK' is not defined
+ERROR: 2022-11-25 21:05:02.627610: [Errno 21] Is a directory: '/home/kali/Desktop/asena-framework'
+ERROR: 2022-11-25 21:05:21.017913: [Errno 2] No such file or directory: '/home/kali/Desktop/asena-frameworkasena'
+ERROR: 2022-11-25 21:06:32.157204: invalid syntax (set.py, line 130)
+ERROR: 2022-11-25 21:06:38.385265: invalid syntax (set.py, line 130)
+ERROR: 2022-11-25 21:07:01.044465: [Errno 2] No such file or directory: '/home/kali/Desktop/asena-frameworkasena'

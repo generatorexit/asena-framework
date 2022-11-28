@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+# coding=utf-8
+
+import os
+import platform
+import re
+import shutil
+import subprocess
+import sys
+
+# import main core functionality into asena
+from src.core.asenacore import *
+
+# check which operating system
+operating_system = platform.system()
+
+if operating_system.lower() == "linux":
+    # root check
+    if os.geteuid() != 0:
+        print_warning("Asena Framework must run as root.")
+        exit_asena()
+
+else:
+    print_warning("The Asena Framework is for linux only.")
+    print_info("If you want its use in other OS, support us.")
+    print_status("https://github.com/generatorexit/asena-framework")
+    exit_asena()
+
+# if we are running in the path no need to change
+if os.path.isfile("asena"):
+    pass
+
+# check where we are and load default directory
+elif os.path.isdir("/usr/share/asena-framework"):
+    if not os.path.isfile("asena"):
+        os.chdir("/usr/share/asena-framework")
+        sys.path.append("/usr/share/asena-framework")
+
+# make sure the config file is located in /etc/asena-framework
+if not os.path.isdir("/etc/asena-framework/"):
+    os.makedirs("/etc/asena-framework/")
+    shutil.copyfile("src/core/config.baseline", "/etc/asena-framework/asena.config")
+
+if not os.path.isfile("/etc/asena-framework/asena.config"):
+    shutil.copyfile("src/core/config.baseline", "/etc/asena/asena.config")
+
+# here we check to ensure we have the latest version
+with open("/etc/asena-framework/asena.config") as fileopen:
+    data = fileopen.read()
+
+if "CONFIG_VERSION=1.0.0" not in data:
+    print_status("Overwriting old config for updates to Asena Framework. Backing up your old one in /etc/asena/")
+    shutil.move("/etc/asena-framework/asena.config", "/etc/asena-framework/asena.config.bak")
+    shutil.copyfile("src/core/config.baseline", "/etc/asena-framework/asena.config")
+
+# import after config checks have been properly created
+from src.core import text
+from src.core.update_config import update_config
+
+if os.path.isfile(os.path.join(userconfigpath, "version.lock")):
+    os.remove(os.path.join(userconfigpath, "version.lock"))
+
+# check directory and make it
+if not os.path.isdir("src/logs/"):
+    os.makedirs("src/logs/")
+
+# check asena logfile
+if not os.path.isfile("src/logs/asena_logfile.log"):
+    # create new log
+    with open("src/logs/asena_logfile.log", 'w') as filewrite:
+        filewrite.write('')
+
+# use ~/.asena
+if operating_system.lower() == "linux":
+    if not os.path.isdir(userconfigpath):
+        # create the asena variables
+        os.makedirs(userconfigpath)
+        # if for some reason it failed to pull the path
+        userdir = os.path.join(os.path.expanduser('~'), '.asena')
+        if not os.path.isdir(userdir):
+            os.makedirs(userdir)
+
+if not os.path.isdir(os.path.join(userconfigpath, "reports")):
+    os.makedirs(os.path.join(userconfigpath, "reports"))
+
+# update the main config per load
+update_config()
+
+# chmod routine
+if operating_system.lower() == "linux":
+    # change permissions
+    subprocess.Popen("chmod +x asena_automate;"
+                     "chmod +x asena_proxy;"
+                     "chmod +x asena_update;"
+                     "chmod +x setup.py;",
+                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+
+# for config
+# dns = core.check_config("DNS_SERVER=")
+# if dns.lower() == "on":
+#     pass
+
+# remove old files
+for root, dirs, files in os.walk(userconfigpath):
+    for f in files:
+        try:
+            match = re.search(".svn|entries|all-wcprops|props|text-base|prop-base|tmp", f)
+            if not match:
+                os.unlink(os.path.join(root, f))
+        # if they are being used then ignore
+        except:
+            pass
+    # loop through all the directories
+    for d in dirs:
+        try:
+            match = re.search(".svn|entries|all-wcprops|props|text-base|prop-base|tmp", d)
+            if not match:
+                shutil.rmtree(os.path.join(root, d))
+        except:
+            pass
+
+# if there isn't a asena_config.py file yet, create one
+if not os.path.isfile("/etc/asena-framework/asena_config.py"):
+    update_config()
+
+define_version = get_version()
+
+# create the asena.options routine
+with open(os.path.join(userconfigpath, "asena.options"), "w") as filewrite:
+    filewrite.write("{This is the main Asena Framework configuration file for all options used in Asena}\n")
+
+try:
+    # initial user menu
+    if not os.path.isfile("src/agreement"):
+        with open("readme/LICENSE") as fileopen:
+            for line in fileopen:
+                print((line.rstrip()))
+        print("\nThe Asena Framework is designed purely"
+              " for good and not evil. If you are planning on "
+              "using this tool for malicious purposes that are "
+              "not authorized by the company you are performing "
+              "assessments for, you are violating the terms of "
+              "service and license of this toolset. By hitting "
+              "yes (only one time), you agree to the terms of "
+              "service and that you will only use this tool for "
+              "lawful purposes only.")
+        choice = input("\nDo you agree to the terms of service [y/n]: ")
+        choice += " "  # b/c method below
+        if choice[0].lower().lstrip() == "y":
+            with open("src/agreement", "w") as filewrite:
+                filewrite.write("user-accepted")
+        else:
+            print_warning("Not accepted by user")
+            exit_asena()
+
+    # banner and main menu text
+    show_banner()
+    show_main_menu = create_menu(text.main_text, text.main_menu)
+
+    # input
+    while 1:
+        # main core menu
+        def asena():
+            try:
+                # print(core.asenaprompt(["19", "21", "22"], "Enter your choice (ex. 1 or 2) [1]"))
+                print(asenaprompt('0',''),end='')
+                main_menu_choice = input_str()
+
+                # color
+                if main_menu_choice == "color false":
+                    bcolors.PURPLE = ''
+                    bcolors.CYAN = ''
+                    bcolors.DARKCYAN = ''
+                    bcolors.BLUE = ''
+                    bcolors.GREEN = ''
+                    bcolors.YELLOW = ''
+                    bcolors.RED = ''
+                    # bcolors.BOLD = '\033[1m'
+                    # bcolors.UNDERL = '\033[4m'
+                    # bcolors.ENDC = '\033[0m'
+                    bcolors.backBlack = ''
+                    bcolors.backRed = ''
+                    bcolors.backGreen = ''
+                    bcolors.backYellow = ''
+                    bcolors.backBlue = ''
+                    bcolors.backMagenta = ''
+                    bcolors.backCyan = ''
+                    bcolors.backWhite = ''
+
+                # quit out
+                if main_menu_choice == 'exit' or main_menu_choice == "quit":
+                    exit_asena()
+                
+                # clear menu
+                if main_menu_choice == 'clear':
+                    clear()
+
+                if main_menu_choice == 'banner':
+                    show_graphic()
+
+                # load first module
+                if main_menu_choice == '1':
+                    import src.core.set as set
+                    set.all_cat()
+
+                # third party modules
+                if main_menu_choice == '2':
+                    import src.core.module_handler
+
+                # update asena
+                if main_menu_choice == '3':
+                    update_asena()
+
+                # credits
+                if main_menu_choice == '5':
+                    update_config()
+
+                # update config
+                if main_menu_choice == '6':
+                    help_menu()
+
+            except KeyboardInterrupt:
+                sys.stdout.write(f'\r{asenaprompt("0", "")}Interrupt: use the "exit" command to quit \n')
+                asena()
+
+        asena()
+
+# handle keyboard interrupts
+except KeyboardInterrupt:
+    print("\n\r[*] Control-C detected. Exiting the Asena Framework.")
+
+# handle exceptions
+except Exception as error:
+    log(error)
+    print("\n\r[!] Something went wrong. Printing the error: " + str(error))
